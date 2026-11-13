@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="hi">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>हजूर का हुक्म — एडमिन</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#fbf8f0;color:#29251e;font-family:Arial,"Noto Sans Devanagari",sans-serif;padding:24px}
+.wrap{max-width:650px;margin:7vh auto;background:white;border:1px solid #e5d5b0;border-radius:18px;padding:28px;box-shadow:0 12px 40px #6c50151a}
+h1{color:#ad8130;font-weight:600}label{display:block;margin:18px 0 8px}
+input,textarea,button{width:100%;font:inherit;padding:13px;border:1px solid #d8c9a7;border-radius:9px}
+textarea{min-height:180px;resize:vertical;line-height:1.6}
+button{margin-top:14px;background:#ad8130;color:white;border:0;cursor:pointer;font-weight:bold}
+button.secondary{background:#eee7d8;color:#342b1b}
+.note{color:#766b56;line-height:1.6;font-size:14px}.hidden{display:none}.msg{margin-top:14px;min-height:22px}
+</style></head>
+<body><main class="wrap">
+<h1>हजूर का हुक्म — एडमिन पैनल</h1>
+<p class="note">यह पैनल केवल अधिकृत हजूर के लॉगिन के लिए है। पहले सेटअप में अपनी Supabase जानकारी भरें।</p>
+<section id="login">
+<label>ईमेल</label><input id="email" type="email" autocomplete="username">
+<label>पासवर्ड</label><input id="password" type="password" autocomplete="current-password">
+<button id="loginBtn">लॉगिन करें</button>
+</section>
+<section id="editor" class="hidden">
+<label>वर्तमान संदेश बदलें</label><textarea id="content"></textarea>
+<button id="publishBtn">नया संदेश प्रकाशित करें</button>
+<button class="secondary" id="logoutBtn">लॉगआउट</button>
+</section>
+<div id="msg" class="msg" role="status"></div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* index.html की तरह यहाँ भी अपनी Supabase Project URL और anon key भरें। */
+const SUPABASE_URL = "YOUR_SUPABASE_PROJECT_URL";
+const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+const msg=document.getElementById("msg");
+const login=document.getElementById("login"), editor=document.getElementById("editor");
+if(!SUPABASE_URL.startsWith("https://") || SUPABASE_ANON_KEY.startsWith("YOUR_")){
+ msg.textContent="सेटअप बाकी है: README में दिए निर्देशों के अनुसार Supabase URL और anon key भरें।";
+} else {
+ const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+ async function showEditor(){
+  const {data:{user}}=await client.auth.getUser();
+  if(!user){login.classList.remove("hidden");editor.classList.add("hidden");return;}
+  const {data,error}=await client.from("site_message").select("content").eq("id",1).single();
+  if(error){msg.textContent="संदेश लोड नहीं हुआ: "+error.message;return;}
+  document.getElementById("content").value=data.content;
+  login.classList.add("hidden");editor.classList.remove("hidden");msg.textContent="लॉगिन सफल।";
+ }
+ document.getElementById("loginBtn").onclick=async()=>{
+  const {error}=await client.auth.signInWithPassword({email:document.getElementById("email").value,password:document.getElementById("password").value});
+  msg.textContent=error?("लॉगिन नहीं हुआ: "+error.message):"";
+  if(!error) showEditor();
+ };
+ document.getElementById("publishBtn").onclick=async()=>{
+  const content=document.getElementById("content").value.trim();
+  if(!content){msg.textContent="कृपया संदेश लिखें।";return;}
+  const {error}=await client.from("site_message").update({content,updated_at:new Date().toISOString()}).eq("id",1);
+  msg.textContent=error?("प्रकाशित नहीं हुआ: "+error.message):"नया संदेश प्रकाशित हो गया है।";
+ };
+ document.getElementById("logoutBtn").onclick=async()=>{await client.auth.signOut();showEditor();};
+ showEditor();
+}
+</script></body></html>

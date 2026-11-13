@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>हजूर का हुक्म</title>
+<meta name="description" content="हजूर का वर्तमान संदेश">
+<style>
+:root{--gold:#b58a36;--ink:#28231a;--paper:#fffdf8}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:linear-gradient(145deg,#fff 0%,#fffdf7 65%,#f7f0df 100%);color:var(--ink);font-family:Georgia,"Noto Serif Devanagari",serif}
+main{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px}
+.card{width:min(900px,100%);min-height:70vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:clamp(28px,7vw,80px);border:1px solid #e7d7b3;border-radius:24px;background:rgba(255,255,255,.88);box-shadow:0 18px 55px rgba(94,68,19,.09);position:relative}
+.card:before,.card:after{content:"✦";color:var(--gold);font-size:22px;position:absolute}
+.card:before{top:22px;left:25px}.card:after{bottom:22px;right:25px}
+h1{font-size:clamp(30px,5vw,54px);font-weight:500;letter-spacing:.02em;color:var(--gold);margin:0 0 38px}
+.rule{height:1px;width:min(260px,65%);background:linear-gradient(90deg,transparent,var(--gold),transparent);margin-bottom:34px}
+#message{font-size:clamp(25px,4.2vw,43px);line-height:1.7;white-space:pre-wrap;max-width:760px}
+#status{margin-top:32px;font:13px Arial,sans-serif;color:#9a8b6d}
+@media(max-width:520px){.card{min-height:78vh;border-radius:16px}h1{margin-bottom:28px}#message{line-height:1.6}}
+</style>
+</head>
+<body>
+<main><section class="card" aria-live="polite">
+<h1>हजूर का हुक्म</h1><div class="rule"></div>
+<div id="message">Welcome<br><br>छल, कपट, द्वेष, पाखंड और झूठ की दुनिया में आपका स्वागत है।</div>
+<div id="status">वर्तमान संदेश</div>
+</section></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* सेटअप के बाद नीचे अपनी Supabase Project URL और anon key भरें। */
+const SUPABASE_URL = "YOUR_SUPABASE_PROJECT_URL";
+const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+const messageEl = document.getElementById("message");
+const statusEl = document.getElementById("status");
+if (SUPABASE_URL.startsWith("https://") && !SUPABASE_ANON_KEY.startsWith("YOUR_")) {
+  const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  async function loadMessage(){
+    const {data,error}=await client.from("site_message").select("content").eq("id",1).single();
+    if(!error && data) messageEl.textContent=data.content;
+  }
+  loadMessage();
+  client.channel("public-message")
+    .on("postgres_changes",{event:"UPDATE",schema:"public",table:"site_message",filter:"id=eq.1"},loadMessage)
+    .subscribe();
+  statusEl.textContent="वर्तमान संदेश";
+}
+</script>
+</body>
+</html>
